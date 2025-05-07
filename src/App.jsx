@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
+import CharacterListPage from './pages/CharacterListPage';
 import db from './services/db'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <main className='container mx-auto px-4 py-8'>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/characters" element={<CharacterListPage />} />
           </Routes>
         </main>
       </div>
