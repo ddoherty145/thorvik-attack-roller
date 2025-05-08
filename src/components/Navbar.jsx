@@ -15,7 +15,7 @@ export function Navbar() {
         <div className="flex justify-between items-center py-4">
           {/* Logo and site name */}
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-medieval font-bold">D&D Attack Roller</span>
+            <span className="text-2xl font-medieval font-bold">Torvik's Attack Roller</span>
           </Link>
 
           {/* Desktop Navigation */}

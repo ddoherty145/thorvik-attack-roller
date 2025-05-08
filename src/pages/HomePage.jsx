@@ -32,8 +32,8 @@ function HomePage() {
     return (
         <div className='max-w-4xl mx-auto'>
           <div className='text-center mb-12'>
-            <h1 className='text-4xl md:text-5xl font-medieval mb-4'>Thorvik Shatterhorn's Attack Roller</h1>
-            <p className='text-xl font-fantasy'>Thorvik says hit things hard with this</p>
+            <h1 className='text-4xl md:text-5xl font-medieval mb-4'>Torvik Shatterhorn's Attack Roller</h1>
+            <p className='text-xl font-fantasy'>"Torvik says hit things hard with this"</p>
           </div>
     
           <div className="grid md:grid-cols-2 gap-6 mb-8">
