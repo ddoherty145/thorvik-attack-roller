@@ -175,7 +175,7 @@ function QuickRollPage() {
             </div>
           </div>
           
-          <div className="card bg-white/90 mt-6">
+          {/* <div className="card bg-white/90 mt-6">
             <h2>Dice Notation Help</h2>
             <p className="mb-4">
               Dice notation is a system used to represent different dice rolls in tabletop role-playing games.
@@ -199,7 +199,7 @@ function QuickRollPage() {
                 </ul>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       );
     }
