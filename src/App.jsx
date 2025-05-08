@@ -6,6 +6,7 @@ import CharacterListPage from './pages/CharacterListPage';
 import QuickRollPage from './pages/QuickRollPage';
 import CreateCharacterPage from './pages/CreateCharacterPage';
 import CharacterDetailPage from './pages/CharacterDetailPage';
+import SpellLibraryPage from './pages/SpellLibraryPage';
 import db from './services/db'
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
             <Route path="/characters/:id" element={<CharacterDetailPage />} />
             <Route path="/roll" element={<QuickRollPage />} />
             <Route path="/characters/new" element={<CreateCharacterPage />} />
+            <Route path="/spells/library" element={<SpellLibraryPage />} />
           </Routes>
         </main>
       </div>
