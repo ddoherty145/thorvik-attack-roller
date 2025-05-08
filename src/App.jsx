@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import HomePage from './pages/HomePage';
 import CharacterListPage from './pages/CharacterListPage';
 import QuickRollPage from './pages/QuickRollPage';
+import CreateCharacterPage from './pages/CreateCharacterPage';
 import CharacterDetailPage from './pages/CharacterDetailPage';
 import db from './services/db'
 
@@ -36,6 +37,7 @@ function App() {
             <Route path="/characters" element={<CharacterListPage />} />
             <Route path="/characters/:id" element={<CharacterDetailPage />} />
             <Route path="/roll" element={<QuickRollPage />} />
+            <Route path="/characters/new" element={<CreateCharacterPage />} />
           </Routes>
         </main>
       </div>
