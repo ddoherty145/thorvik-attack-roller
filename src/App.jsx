@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import HomePage from './pages/HomePage';
 import CharacterListPage from './pages/CharacterListPage';
 import QuickRollPage from './pages/QuickRollPage';
+import CharacterDetailPage from './pages/CharacterDetailPage';
 import db from './services/db'
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/characters" element={<CharacterListPage />} />
+            <Route path="/characters/:id" element={<CharacterDetailPage />} />
             <Route path="/roll" element={<QuickRollPage />} />
           </Routes>
         </main>
