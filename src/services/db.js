@@ -12,9 +12,10 @@ db.version(1).stores({
     rollHistory: '++id, characterId, characterWeaponId, characterSpellId, timestamp'
 });
 
-// Initaialize with sample data
+// Initialize with sample data
 db.on('populate', async () => {
-    // Weapon templpate
+    console.log('Initializing database with sample data...');
+    // Weapon template
     await db.weapons.bulkAdd([
         {
             name: 'Longsword',
@@ -56,8 +57,8 @@ db.on('populate', async () => {
             proficiencyCategory: 'simple',
             isTemplate: true
         }
-
     ]);
+    console.log('Sample weapons added successfully');
 
     // Spell template
     await db.spells.bulkAdd([
@@ -129,7 +130,10 @@ export const characterService = {
 
 export const weaponService = {
     async getTemplates() {
-        return await db.weapons.where('isTemplate').equals(1).toArray();
+        console.log('Fetching weapon templates...');
+        const templates = await db.weapons.where('isTemplate').equals(1).toArray();
+        console.log('Found templates:', templates);
+        return templates;
     },
 
     async getCharacterWeapons(characterId) {
@@ -152,14 +156,24 @@ export const weaponService = {
             return weapons;
     },
 
-    async addToCharacter(characterId, weaponId,customProperties = {}) {
+    async addToCharacter(characterId, weaponId, customProperties = {}) {
         return await db.characterWeapons.add({
             characterId,
             weaponId,
             isEquipped: 0,
             ...customProperties
         });
-    } 
+    },
+
+    async addTemplate(weapon) {
+        return await db.weapons.add({
+            ...weapon,
+            isTemplate: 1
+        });
+    },
+
+    getById: (id) => db.weapons.get(id),
+    update: (id, weapon) => db.weapons.update(id, weapon)
 };
 
 export const spellService = {

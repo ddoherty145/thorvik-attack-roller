@@ -7,6 +7,9 @@ import QuickRollPage from './pages/QuickRollPage';
 import CreateCharacterPage from './pages/CreateCharacterPage';
 import CharacterDetailPage from './pages/CharacterDetailPage';
 import SpellLibraryPage from './pages/SpellLibraryPage';
+import WeaponLibraryPage from './pages/WeaponLibraryPage';
+import NewWeaponPage from './pages/NewWeaponPage';
+import EditWeaponPage from './pages/EditWeaponPage';
 import db from './services/db'
 
 function App() {
@@ -40,6 +43,9 @@ function App() {
             <Route path="/roll" element={<QuickRollPage />} />
             <Route path="/characters/new" element={<CreateCharacterPage />} />
             <Route path="/spells/library" element={<SpellLibraryPage />} />
+            <Route path="/weapons/library" element={<WeaponLibraryPage />} />
+            <Route path="/weapons/new" element={<NewWeaponPage />} />
+            <Route path="/weapons/edit/:id" element={<EditWeaponPage />} />
           </Routes>
         </main>
       </div>
