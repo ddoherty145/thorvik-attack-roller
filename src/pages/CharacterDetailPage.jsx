@@ -81,20 +81,52 @@ function CharacterDetailPage() {
 
   const handleAttackRoll = async (weapon) => {
     // Calculate attack bonus
-    const abilityMod = calculateAbilityModifier(character[weapon.abilityScore.toLowerCase()]);
-    const profBonus = getProficiencyBonus();
-    const magicalBonus = weapon.magicalBonus || 0;
-    const attackBonus = abilityMod + profBonus + magicalBonus;
+    console.log('Weapon:', weapon);
+    console.log('Character:', character);
+    console.log('Weapon Ability Score:', weapon.abilityScore);
     
-    // Roll attack
-    const attackRoll = rollDice('1d20');
-    const attackTotal = attackRoll.total + attackBonus;
+    // Map the weapon's ability score to the character's property name
+    const abilityScoreMap = {
+      'STR': 'strength',
+      'DEX': 'dexterity',
+      'CON': 'constitution',
+      'INT': 'intelligence',
+      'WIS': 'wisdom',
+      'CHA': 'charisma'
+    };
+    
+    const abilityScore = abilityScoreMap[weapon.abilityScore] || 'strength';
+    console.log('Mapped Ability Score:', abilityScore);
+    console.log('Character Stats:', {
+      strength: character.strength,
+      dexterity: character.dexterity,
+      constitution: character.constitution,
+      intelligence: character.intelligence,
+      wisdom: character.wisdom,
+      charisma: character.charisma
+    });
+    
+    // Get the ability score value directly from the character object
+    const abilityScoreValue = character[abilityScore];
+    console.log('Character Ability Score Value:', abilityScoreValue);
+    const abilityMod = calculateAbilityModifier(abilityScoreValue);
+    console.log('Ability Modifier:', abilityMod);
+    const profBonus = getProficiencyBonus();
+    console.log('Proficiency Bonus:', profBonus);
+    const magicalBonus = weapon.magicalBonus || 0;
+    console.log('Magical Bonus:', magicalBonus);
+    const attackBonus = abilityMod + profBonus + magicalBonus;
+    console.log('Total Attack Bonus:', attackBonus);
+    
+    // Roll attack with the bonus included in the notation
+    const attackRoll = rollDice(`1d20+${attackBonus}`);
+    const attackTotal = attackRoll.total;
     
     // Roll damage
     const damageOptions = { critical: attackRoll.rolls[0] === 20 };
     const damageRoll = rollDice(weapon.damageDice, damageOptions);
     const damageBonus = abilityMod + magicalBonus;
-    const damageTotal = damageRoll.total + damageBonus;
+    const damageTotal = damageRoll.total + (damageBonus || 0);
     
     // Save roll to history
     await rollHistoryService.addRoll({
@@ -120,23 +152,19 @@ function CharacterDetailPage() {
 
   const handleSpellAttack = async (spell) => {
     // Calculate spell attack bonus
-    const spellAbility = character.class === 'Wizard' || character.class === 'Artificer' ? 'intelligence' :
-                         character.class === 'Cleric' || character.class === 'Druid' ? 'wisdom' : 'charisma';
-    const abilityMod = calculateAbilityModifier(character[spellAbility]);
+    const abilityScore = character.spellcastingAbility || 'INT';
+    const abilityMod = calculateAbilityModifier(character[abilityScore.toLowerCase()]);
     const profBonus = getProficiencyBonus();
-    const attackBonus = abilityMod + profBonus;
+    const spellAttackBonus = abilityMod + profBonus + (spell.spellAttackBonusOverride || 0);
     
-    // Roll attack
-    const attackRoll = rollDice('1d20');
-    const attackTotal = attackRoll.total + attackBonus;
+    // Roll spell attack
+    const attackRoll = rollDice(`1d20+${spellAttackBonus}`);
+    const attackTotal = attackRoll.total;
     
     // Roll damage if applicable
-    let damageRoll = null;
-    let damageTotal = null;
-    
+    let damageTotal = 0;
     if (spell.damageDice) {
-      const damageOptions = { critical: attackRoll.rolls[0] === 20 };
-      damageRoll = rollDice(spell.damageDice, damageOptions);
+      const damageRoll = rollDice(spell.damageDice);
       damageTotal = damageRoll.total;
     }
     
@@ -145,10 +173,9 @@ function CharacterDetailPage() {
       characterId: character.id,
       characterSpellId: spell.characterSpellId,
       rollType: 'Spell Attack',
-      spellName: spell.name,
-      diceNotation: `1d20 + ${attackBonus}`,
+      diceNotation: `1d20 + ${spellAttackBonus}`,
       rollResult: attackRoll.rolls[0],
-      modifiers: attackBonus,
+      modifiers: spellAttackBonus,
       finalResult: attackTotal,
       isCritical: attackRoll.rolls[0] === 20,
       damageRoll: damageTotal,
@@ -160,11 +187,7 @@ function CharacterDetailPage() {
     setRollHistory(updatedHistory);
     
     // Show result
-    if (damageTotal) {
-      alert(`Spell Attack Roll: ${attackTotal} (d20 roll: ${attackRoll.rolls[0]} + ${attackBonus})\n${attackRoll.rolls[0] === 20 ? 'CRITICAL HIT! ' : ''}Damage: ${damageTotal} (${damageRoll.rolls.join(' + ')})`);
-    } else {
-      alert(`Spell Attack Roll: ${attackTotal} (d20 roll: ${attackRoll.rolls[0]} + ${attackBonus})`);
-    }
+    alert(`Spell Attack Roll: ${attackTotal} (d20 roll: ${attackRoll.rolls[0]} + ${spellAttackBonus})\n${attackRoll.rolls[0] === 20 ? 'CRITICAL HIT! ' : ''}${spell.damageDice ? `Damage: ${damageTotal}` : ''}`);
   };
 
   const handleAddWeapon = async (weaponTemplateId) => {
@@ -522,25 +545,16 @@ function CharacterDetailPage() {
                       </button>
                     )}
                   </div>
-                  <p className="text-sm mb-2">{spell.description}</p>
-                  <div className="grid md:grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="font-medium">Casting Time:</span> {spell.castingTime}
-                    </div>
-                    <div>
-                      <span className="font-medium">Duration:</span> {spell.duration}
-                    </div>
+                  <div className="text-sm mb-2">
+                    <p><strong>Casting Time:</strong> {spell.castingTime}</p>
+                    <p><strong>Range:</strong> {spell.range}</p>
+                    <p><strong>Components:</strong> {spell.components?.join(', ')}</p>
+                    <p><strong>Duration:</strong> {spell.duration}</p>
                     {spell.damageDice && (
-                      <div>
-                        <span className="font-medium">Damage:</span> {spell.damageDice} {spell.damageType}
-                      </div>
-                    )}
-                    {spell.components && (
-                      <div>
-                        <span className="font-medium">Components:</span> {spell.components.join(', ')}
-                      </div>
+                      <p><strong>Damage:</strong> {spell.damageDice} {spell.damageType}</p>
                     )}
                   </div>
+                  <p className="text-sm">{spell.description}</p>
                 </div>
               ))}
             </div>
@@ -567,15 +581,30 @@ function CharacterDetailPage() {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  {spellTemplates.map(spell => (
-                    <div key={spell.id} className="p-3 bg-secondary-100 hover:bg-secondary-200 rounded flex justify-between items-center cursor-pointer" onClick={() => handleAddSpell(spell.id)}>
-                      <div>
-                        <div className="font-medium">{spell.name}</div>
-                        <div className="text-sm text-secondary-600">Level {spell.level} {spell.school}</div>
+                  {spellTemplates
+                    .sort((a, b) => {
+                      // First sort by level
+                      if (a.level !== b.level) {
+                        return a.level - b.level;
+                      }
+                      // Then sort alphabetically by name
+                      return a.name.localeCompare(b.name);
+                    })
+                    .map(spell => (
+                      <div 
+                        key={spell.id} 
+                        className="p-3 bg-secondary-100 hover:bg-secondary-200 rounded flex justify-between items-center cursor-pointer" 
+                        onClick={() => handleAddSpell(spell.id)}
+                      >
+                        <div>
+                          <div className="font-medium">{spell.name}</div>
+                          <div className="text-sm text-secondary-600">
+                            Level {spell.level} {spell.school}
+                          </div>
+                        </div>
+                        <PlusIcon className="h-5 w-5 text-primary-600" />
                       </div>
-                      <PlusIcon className="h-5 w-5 text-primary-600" />
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>

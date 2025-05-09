@@ -17,8 +17,8 @@ export default function CreateCharacterPage() {
         charisma: 10,
         currentHP: 10,
         maxHP: 10,
-        armorClass: 10
-        
+        armorClass: 10,
+        spellcastingAbility: 'INT'
     });
 
     const handleChange = (field, value) => {
@@ -50,6 +50,20 @@ export default function CreateCharacterPage() {
               <input type="number" placeholder="Current HP" value={character.currentHP} onChange={e => handleChange('currentHP', parseInt(e.target.value))} className="input w-full" required />
               <input type="number" placeholder="Max HP" value={character.maxHP} onChange={e => handleChange('maxHP', parseInt(e.target.value))} className="input w-full" required />
               <input type="number" placeholder="Armor Class" value={character.armorClass} onChange={e => handleChange('armorClass', parseInt(e.target.value))} className="input w-full" required />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-secondary-700">Spellcasting Ability</label>
+                    <select
+                        className="input w-full"
+                        value={character.spellcastingAbility}
+                        onChange={e => handleChange('spellcastingAbility', e.target.value)}
+                    >
+                        <option value="INT">Intelligence</option>
+                        <option value="WIS">Wisdom</option>
+                        <option value="CHA">Charisma</option>
+                    </select>
+                </div>
             </div>
             <button type="submit" className="btn btn-primary">Create Character</button>
           </form>

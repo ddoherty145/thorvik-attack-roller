@@ -85,17 +85,42 @@ export function rollDice(notation, options ={}) {
  */
 
 function parseDiceNotation(notation) {
-    // Regex to match dice notation 
-    const regex = /^(\d+)d(\d+)([+-]\d+)?$/;
-    const match = notation.toLowerCase().replace(/\s+/g, '').match(regex);
-
-    if (!match) return null;
-
-    const diceCount = parseInt(match[1], 10);
-    const diceType = parseInt(match[2], 10);
-    const modifier = match[3] ? parseInt(match[3], 10) : 0;
-
-    return { diceCount, diceType, modifier };
+    // Split the notation into parts (e.g., "2d6+1d4" becomes ["2d6", "1d4"])
+    const parts = notation.toLowerCase().replace(/\s+/g, '').split(/[+-]/);
+    const operators = notation.match(/[+-]/g) || [];
+    
+    let totalDiceCount = 0;
+    let totalModifier = 0;
+    let diceType = 0;
+    
+    // Process each part
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const isNegative = i > 0 && operators[i - 1] === '-';
+        
+        // Check if it's a dice roll (e.g., "2d6")
+        const diceMatch = part.match(/^(\d+)d(\d+)$/);
+        if (diceMatch) {
+            const count = parseInt(diceMatch[1], 10);
+            const type = parseInt(diceMatch[2], 10);
+            totalDiceCount += count;
+            diceType = type; // We'll use the last dice type for simplicity
+        } else {
+            // It's a modifier (e.g., "+5")
+            const modifier = parseInt(part, 10);
+            if (!isNaN(modifier)) {
+                totalModifier += isNegative ? -modifier : modifier;
+            }
+        }
+    }
+    
+    if (totalDiceCount === 0) return null;
+    
+    return {
+        diceCount: totalDiceCount,
+        diceType: diceType,
+        modifier: totalModifier
+    };
 }
 
 /**

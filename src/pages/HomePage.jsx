@@ -91,6 +91,7 @@ function HomePage() {
                       <th className="text-left py-2">Character</th>
                       <th className="text-left py-2">Roll Type</th>
                       <th className="text-left py-2">Result</th>
+                      <th className="text-left py-2">Damage</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -99,7 +100,17 @@ function HomePage() {
                         <td className="py-2 text-sm">{new Date(roll.timestamp).toLocaleTimeString()}</td>
                         <td className="py-2">{recentCharacters.find(c => c.id === roll.characterId)?.name || 'Unknown'}</td>
                         <td className="py-2">{roll.rollType}</td>
-                        <td className="py-2 font-bold">{roll.finalResult}</td>
+                        <td className="py-2 font-bold">
+                          {roll.finalResult}
+                          {roll.isCritical && <span className="text-red-600 ml-1">(Critical!)</span>}
+                        </td>
+                        <td className="py-2">
+                          {roll.damageRoll ? (
+                            <span className="font-medium">{roll.damageRoll}</span>
+                          ) : (
+                            <span className="text-secondary-500">-</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

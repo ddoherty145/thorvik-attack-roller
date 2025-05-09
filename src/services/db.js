@@ -208,7 +208,17 @@ export const spellService = {
         prepared: false,
         ...customProperties
       });
-    }
+    },
+
+    async addTemplate(spell) {
+      return await db.spells.add({
+        ...spell,
+        isTemplate: 1
+      });
+    },
+
+    getById: (id) => db.spells.get(id),
+    update: (id, spell) => db.spells.update(id, spell)
   };
   
   export const rollHistoryService = {
