@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../context/AuthContext';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isLoggedIn, logout } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
   };
 
   return (
@@ -35,6 +42,31 @@ export function Navbar() {
             <Link to="/spells/library" className="font-medieval hover:text-primary-300 transition-colors">
               Spells
             </Link>
+            <div className="flex items-center space-x-4 ml-6">
+              {isLoggedIn ? (
+                <button 
+                  onClick={handleLogout}
+                  className="font-medieval px-4 py-2 rounded border border-white hover:bg-white hover:text-leather transition-colors"
+                >
+                  Logout
+                </button>
+              ) : (
+                <>
+                  <Link 
+                    to="/login" 
+                    className="font-medieval px-4 py-2 rounded border border-white hover:bg-white hover:text-leather transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    className="font-medieval px-4 py-2 rounded bg-white text-leather hover:bg-primary-300 hover:text-white transition-colors"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -92,6 +124,33 @@ export function Navbar() {
               >
                 Spells
               </Link>
+              <div className="flex flex-col space-y-3 pt-4 border-t border-gray-700">
+                {isLoggedIn ? (
+                  <button 
+                    onClick={handleLogout}
+                    className="font-medieval px-4 py-2 rounded border border-white hover:bg-white hover:text-leather transition-colors text-center"
+                  >
+                    Logout
+                  </button>
+                ) : (
+                  <>
+                    <Link 
+                      to="/login" 
+                      className="font-medieval px-4 py-2 rounded border border-white hover:bg-white hover:text-leather transition-colors text-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link 
+                      to="/register" 
+                      className="font-medieval px-4 py-2 rounded bg-white text-leather hover:bg-primary-300 hover:text-white transition-colors text-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Register
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

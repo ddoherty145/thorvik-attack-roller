@@ -1,5 +1,5 @@
 import db from './db';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // Add user to the database
 db.version(2).stores({

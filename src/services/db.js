@@ -121,7 +121,7 @@ export const characterService = {
         return await db.characters.add(character);
     },
     async update(id, character) {
-        return await db.characters.put(id, character);
+        return await db.characters.update(id, character);
     },
     async delete(id) {
         return await db.characters.delete(id);
