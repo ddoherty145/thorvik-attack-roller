@@ -1,17 +1,24 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { characterService, rollHistoryService } from '../services/db';
+import { useAuth } from '../context/AuthContext';
 
 function HomePage() {
     const [recentCharacters, setRecentCharacters] = useState([]);
     const [recentRolls, setRecentRolls] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         const loadDashboardData = async () => {
             try {
-                // Get the Characters
-                const characters = await characterService.getAll();
+                if (!currentUser) {
+                    setRecentCharacters([]);
+                    setRecentRolls([]);
+                    return;
+                }
+
+                const characters = await characterService.getAllByUser(currentUser.id);
                 setRecentCharacters(characters.slice(0, 3));
 
                 // Iff have character, get recent rolls for said character
@@ -27,7 +34,7 @@ function HomePage() {
         };
 
         loadDashboardData();
-    }, []);
+    }, [currentUser]);
 
     return (
         <div className='max-w-4xl mx-auto'>

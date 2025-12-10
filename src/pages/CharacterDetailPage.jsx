@@ -3,10 +3,12 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { characterService, weaponService, spellService, rollHistoryService } from '../services/db';
 import { rollDice, calculateAbilityModifier } from '../utils/diceRoller';
 import { PencilIcon, TrashIcon, PlusIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../context/AuthContext';
 
 function CharacterDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [character, setCharacter] = useState(null);
   const [weapons, setWeapons] = useState([]);
   const [spells, setSpells] = useState([]);
@@ -23,8 +25,12 @@ function CharacterDetailPage() {
   useEffect(() => {
     const loadCharacterData = async () => {
       try {
+        if (!currentUser) {
+          navigate('/login');
+          return;
+        }
         // Load character
-        const characterData = await characterService.getById(parseInt(id));
+        const characterData = await characterService.getByIdForUser(parseInt(id), currentUser.id);
         if (!characterData) {
           navigate('/characters');
           return;
@@ -58,7 +64,7 @@ function CharacterDetailPage() {
     };
 
     loadCharacterData();
-  }, [id, navigate]);
+  }, [id, navigate, currentUser]);
 
   const formatModifier = (score) => {
     const mod = calculateAbilityModifier(score);
@@ -71,7 +77,11 @@ function CharacterDetailPage() {
 
   const handleSaveCharacter = async () => {
     try {
-      await characterService.update(editedCharacter.id, editedCharacter);
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+      await characterService.updateForUser(editedCharacter.id, currentUser.id, editedCharacter);
       setCharacter(editedCharacter);
       setIsEditing(false);
     } catch (error) {

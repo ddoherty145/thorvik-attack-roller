@@ -1,18 +1,25 @@
 import {useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { characterService } from '../services/db';
 import { calculateAbilityModifier } from '../utils/diceRoller';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../context/AuthContext';
 
 function CharacterListPage() {
     const [characters, setCharacters] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         const loadCharacters = async () => {
             try {
-                const characterData = await characterService.getAll()
-                setCharacters(characterData);
+                if (!currentUser) {
+                    navigate('/login');
+                    return;
+                }
+                const characterData = await characterService.getAllByUser(currentUser.id);
+                setCharacters(characterData || []);
             } catch (error) {
                 console.error('Error loading characters:', error)
             } finally {
@@ -21,7 +28,7 @@ function CharacterListPage() {
         };
 
         loadCharacters();
-    }, []);
+    }, [currentUser, navigate]);
 
     const handleDeleteCharacter = async (id , name , event) => {
         event.preventDefault();
@@ -29,7 +36,11 @@ function CharacterListPage() {
 
         if (window.confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) {
             try {
-                await characterService.delete(id);
+                if (!currentUser) {
+                    navigate('/login');
+                    return;
+                }
+                await characterService.deleteForUser(id, currentUser.id);
                 setCharacters(characters.filter(character => character.id != id));
             } catch (error) {
                 console.error('Error deleting character:', error);

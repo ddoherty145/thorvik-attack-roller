@@ -2,20 +2,32 @@ import Dexie from 'dexie';
 
 const db = new Dexie('ThorvikAttackRollerDB');
 
-// Define the database schema
-db.version(1).stores({
-    characters: '++id, name, class, level',
-    weapons: '++id, name, weaponType, isTemplate',
-    characterWeapons: '++id, characterId, weaponId, isEquipped',
-    spells: '++id, name, level, school, isTemplate',
-    characterSpells: '++id, characterId, spellId, prepared',
-    rollHistory: '++id, characterId, characterWeaponId, characterSpellId, timestamp'
+const defineSchema = () => {
+    db.version(2).stores({
+        users: '++id, email, username',
+        characters: '++id, userId, name, class, level',
+        weapons: '++id, name, weaponType, isTemplate',
+        characterWeapons: '++id, characterId, weaponId, isEquipped',
+        spells: '++id, name, level, school, isTemplate',
+        characterSpells: '++id, characterId, spellId, prepared',
+        rollHistory: '++id, characterId, characterWeaponId, characterSpellId, timestamp'
+    });
+};
+
+defineSchema();
+
+const createTableApi = (table, idKey = 'id') => ({
+    getAll: () => table.toArray(),
+    getById: (id) => table.get(id),
+    add: (item) => table.add(item),
+    update: (id, updates) => table.update(id, updates),
+    remove: (id) => table.delete(id),
+    whereEquals: (field, value) => table.where(field).equals(value).toArray(),
+    idKey
 });
 
 // Initialize with sample data
 db.on('populate', async () => {
-    console.log('Initializing database with sample data...');
-    // Weapon template
     await db.weapons.bulkAdd([
         {
             name: 'Longsword',
@@ -29,7 +41,7 @@ db.on('populate', async () => {
             abilityScore: 'STR',
             magicalBonus: 0,
             proficiencyCategory: 'martial',
-            isTemplate: true
+            isTemplate: 1
         },
         {
             name: 'Shortbow',
@@ -42,7 +54,7 @@ db.on('populate', async () => {
             abilityScore: 'DEX',
             magicalBonus: 0,
             proficiencyCategory: 'simple',
-            isTemplate: true
+            isTemplate: 1
         },
         {
             name: 'Dagger',
@@ -55,12 +67,10 @@ db.on('populate', async () => {
             abilityScore: 'DEX',
             magicalBonus: 0,
             proficiencyCategory: 'simple',
-            isTemplate: true
+            isTemplate: 1
         }
     ]);
-    console.log('Sample weapons added successfully');
 
-    // Spell template
     await db.spells.bulkAdd([
         {
             name: 'Fireball',
@@ -76,7 +86,7 @@ db.on('populate', async () => {
             duration: 'Instantaneous',
             components: ['V', 'S', 'M'],
             materialComponents: 'a tiny ball of bat guano and sulfur',
-            isTemplate: true
+            isTemplate: 1
         },
         {
             name: 'Magic Missile',
@@ -90,7 +100,7 @@ db.on('populate', async () => {
             areaOfEffect: 'Single target',
             duration: 'Instantaneous',
             components: ['V', 'S'],
-            isTemplate: true
+            isTemplate: 1
         },
         {
             name: 'Shield',
@@ -104,138 +114,139 @@ db.on('populate', async () => {
             areaOfEffect: null,
             duration: '1 round',
             components: ['V', 'S'],
-            isTemplate: true
+            isTemplate: 1
         }
     ]);
 });
 
-// Helpers 
-export const characterService = {
-    async getAll() {
-        return await db.characters.toArray();
-    },
-    async getById(id) {
-        return await db.characters.get(id);
-    },
-    async add(character) {
-        return await db.characters.add(character);
-    },
-    async update(id, character) {
-        return await db.characters.update(id, character);
-    },
-    async delete(id) {
-        return await db.characters.delete(id);
+const characterTable = createTableApi(db.table('characters'));
+const weaponTable = createTableApi(db.table('weapons'));
+const characterWeaponTable = createTableApi(db.table('characterWeapons'));
+const spellTable = createTableApi(db.table('spells'));
+const characterSpellTable = createTableApi(db.table('characterSpells'));
+const rollHistoryTable = createTableApi(db.table('rollHistory'));
+
+const ensureOwnedCharacter = async (id, userId) => {
+    const record = await db.characters.get(id);
+    if (!record || record.userId !== userId) {
+        throw new Error('Character not found');
     }
+    return record;
+};
+
+export const characterService = {
+    ...characterTable,
+    getAllByUser(userId) {
+        return db.characters.where('userId').equals(userId).toArray();
+    },
+    async getByIdForUser(id, userId) {
+        const record = await db.characters.get(id);
+        return record?.userId === userId ? record : null;
+    },
+    addForUser(userId, character) {
+        return characterTable.add({ ...character, userId });
+    },
+    async updateForUser(id, userId, updates) {
+        await ensureOwnedCharacter(id, userId);
+        return characterTable.update(id, updates);
+    },
+    async deleteForUser(id, userId) {
+        await ensureOwnedCharacter(id, userId);
+        return characterTable.remove(id);
+    },
+    delete: (id) => characterTable.remove(id)
 };
 
 export const weaponService = {
+    ...weaponTable,
     async getTemplates() {
-        console.log('Fetching weapon templates...');
-        const templates = await db.weapons.where('isTemplate').equals(1).toArray();
-        console.log('Found templates:', templates);
-        return templates;
+        return db.weapons.where('isTemplate').anyOf(1, true).toArray();
     },
-
     async getCharacterWeapons(characterId) {
-        const characterWeapons = await db.characterWeapons
-          .where('characterId').equals(characterId).toArray();
-
-          // Weapon Details
-          const weapons = [];
-          for (const charWeapon of characterWeapons) {
+        const characterWeapons = await db.characterWeapons.where('characterId').equals(characterId).toArray();
+        const weapons = [];
+        for (const charWeapon of characterWeapons) {
             const weapon = await db.weapons.get(charWeapon.weaponId);
             weapons.push({
                 ...weapon,
                 isEquipped: charWeapon.isEquipped,
                 characterWeaponId: charWeapon.id,
-                customName: charWeapon.customName || weapon.name,
+                customName: charWeapon.customName || weapon?.name,
                 attackBonusOverride: charWeapon.attackBonusOverride,
                 damageBonusOverride: charWeapon.damageBonusOverride
             });
-          }
-            return weapons;
+        }
+        return weapons;
     },
-
-    async addToCharacter(characterId, weaponId, customProperties = {}) {
-        return await db.characterWeapons.add({
+    addToCharacter(characterId, weaponId, customProperties = {}) {
+        return characterWeaponTable.add({
             characterId,
             weaponId,
             isEquipped: 0,
             ...customProperties
         });
     },
-
-    async addTemplate(weapon) {
-        return await db.weapons.add({
+    addTemplate(weapon) {
+        return weaponTable.add({
             ...weapon,
             isTemplate: 1
         });
-    },
-
-    getById: (id) => db.weapons.get(id),
-    update: (id, weapon) => db.weapons.update(id, weapon)
+    }
 };
 
 export const spellService = {
-    async getTemplates() {
-      return await db.spells.where('isTemplate').equals(1).toArray();
+    ...spellTable,
+    getTemplates() {
+        return db.spells.where('isTemplate').anyOf(1, true).toArray();
     },
-    
     async getCharacterSpells(characterId) {
-      const characterSpells = await db.characterSpells
-        .where('characterId').equals(characterId).toArray();
-        
-      // Get full spell details for each character spell
-      const spells = [];
-      for (const charSpell of characterSpells) {
-        const spell = await db.spells.get(charSpell.spellId);
-        spells.push({
-          ...spell,
-          prepared: charSpell.prepared,
-          characterSpellId: charSpell.id,
-          spellDcOverride: charSpell.spellDcOverride,
-          spellAttackBonusOverride: charSpell.spellAttackBonusOverride
+        const characterSpells = await db.characterSpells.where('characterId').equals(characterId).toArray();
+        const spells = [];
+        for (const charSpell of characterSpells) {
+            const spell = await db.spells.get(charSpell.spellId);
+            spells.push({
+                ...spell,
+                prepared: charSpell.prepared,
+                characterSpellId: charSpell.id,
+                spellDcOverride: charSpell.spellDcOverride,
+                spellAttackBonusOverride: charSpell.spellAttackBonusOverride
+            });
+        }
+        return spells;
+    },
+    addToCharacter(characterId, spellId, customProperties = {}) {
+        return characterSpellTable.add({
+            characterId,
+            spellId,
+            prepared: false,
+            ...customProperties
         });
-      }
-      
-      return spells;
     },
-    
-    async addToCharacter(characterId, spellId, customProperties = {}) {
-      return await db.characterSpells.add({
-        characterId,
-        spellId,
-        prepared: false,
-        ...customProperties
-      });
-    },
-
-    async addTemplate(spell) {
-      return await db.spells.add({
-        ...spell,
-        isTemplate: 1
-      });
-    },
-
-    getById: (id) => db.spells.get(id),
-    update: (id, spell) => db.spells.update(id, spell)
-  };
-  
-  export const rollHistoryService = {
-    async addRoll(rollData) {
-      return await db.rollHistory.add({
-        ...rollData,
-        timestamp: new Date()
-      });
-    },
-    
-    async getCharacterRolls(characterId, limit = 10) {
-      return await db.rollHistory
-        .where('characterId').equals(characterId)
-        .reverse() // Get newest first
-        .limit(limit)
-        .toArray();
+    addTemplate(spell) {
+        return spellTable.add({
+            ...spell,
+            isTemplate: 1
+        });
     }
-  };
-  
-  export default db;
+};
+
+export const rollHistoryService = {
+    ...rollHistoryTable,
+    addRoll(rollData) {
+        return rollHistoryTable.add({
+            ...rollData,
+            timestamp: new Date()
+        });
+    },
+    getCharacterRolls(characterId, limit = 10) {
+        return db.rollHistory
+            .where('characterId')
+            .equals(characterId)
+            .reverse()
+            .limit(limit)
+            .toArray();
+    }
+};
+
+export { createTableApi, defineSchema };
+export default db;

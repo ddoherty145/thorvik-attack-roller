@@ -1,23 +1,28 @@
-import db from './db';
 import bcrypt from 'bcryptjs';
+import db, { createTableApi } from './db';
 
-// Add user to the database
-db.version(2).stores({
-    users: '++id, email, username',
-    characters: '++id, userId, name, class, level',
-    weapons: '++id, name, weaponType, isTemplate',
-    characterWeapons: '++id, characterId, weaponId, isEquipped',
-    spells: '++id, name, level, school, isTemplate',
-    characterSpells: '++id, characterId, spellId, prepared',
-    rollHistory: '++id, characterId, characterWeaponId, characterSpellId, timestamp'
-});
+const usersTable = createTableApi(db.table('users'));
 
-// Password hashing
-const hashPassword = async (password) => {
-    return await bcrypt.hash(password, 10);
+const sessionStore = {
+    set(user) {
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
+    },
+    get() {
+        const userStr = sessionStorage.getItem('currentUser');
+        return userStr ? JSON.parse(userStr) : null;
+    },
+    clear() {
+        sessionStorage.removeItem('currentUser');
+    }
 };
 
-// Register new user
+const stripPassword = (user) => {
+    if (!user) return null;
+    // eslint-disable-next-line no-unused-vars
+    const { password, ...rest } = user;
+    return rest;
+};
+
 export const authService = {
     async register(username, email, password) {
         try {
@@ -26,20 +31,17 @@ export const authService = {
                 throw new Error('User already exists');
             }
 
-            const hashedPassword = await hashPassword(password);
-            
-            const userId = await db.users.add({
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const userId = await usersTable.add({
                 username,
                 email,
                 password: hashedPassword,
                 createdAt: new Date()
             });
 
-            const user = await db.users.get(userId);
-            const { password: _, ...userWithoutPassword } = user;
-
-            // Store user in local storage
-            sessionStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+            const user = await usersTable.getById(userId);
+            const userWithoutPassword = stripPassword(user);
+            sessionStore.set(userWithoutPassword);
 
             return userWithoutPassword;
         } catch (error) {
@@ -48,7 +50,6 @@ export const authService = {
         }
     },
 
-    // Login user
     async login(email, password) {
         try {
             const user = await db.users.where('email').equals(email).first();
@@ -62,10 +63,8 @@ export const authService = {
                 throw new Error('Invalid password');
             }
 
-            const { password: _, ...userWithoutPassword } = user;
-
-            // Store user in local storage
-            sessionStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+            const userWithoutPassword = stripPassword(user);
+            sessionStore.set(userWithoutPassword);
 
             return userWithoutPassword;
         } catch (error) {
@@ -74,25 +73,15 @@ export const authService = {
         }
     },
 
-    // Logout user
     logout() {
-        sessionStorage.removeItem('currentUser');
+        sessionStore.clear();
     },
 
-    // Get Current User
     getCurrentUser() {
-        const userStr = sessionStorage.getItem('currentUser');
-        return userStr ? JSON.parse(userStr) : null;
+        return sessionStore.get();
     },
 
-    // Check if user is logged in
     isLoggedIn() {
-        return !!this.getCurrentUser();
-    }
-};
-
-export const updateCharacterService = {
-    async getAll(userId) {
-        return await db.characters.where('userId').equals(userId).toArray();
+        return !!sessionStore.get();
     }
 };

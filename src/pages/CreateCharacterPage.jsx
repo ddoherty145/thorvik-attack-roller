@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { characterService } from '../services/db';
+import { useAuth } from '../context/AuthContext';
 
 export default function CreateCharacterPage() {
     const navigate = useNavigate();
+    const { currentUser } = useAuth();
     const [character, setCharacter] = useState({
         name: '',
         race: '',
@@ -28,7 +30,11 @@ export default function CreateCharacterPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await characterService.add(character);
+        if (!currentUser) {
+            navigate('/login');
+            return;
+        }
+        await characterService.addForUser(currentUser.id, character);
         navigate('/characters');
     };
     return (
